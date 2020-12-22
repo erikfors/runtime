@@ -4,7 +4,7 @@
 namespace System.Net.Http
 {
     /// <summary>
-    /// Represents the context passed to the ConnectCallback for a SocketsHttpHandler instance.
+    /// Represents the context passed to the ConnectionKeyCallback for a SocketsHttpHandler instance.
     /// </summary>
     public sealed class SocketsHttpConnectionKeyContext
     {
@@ -31,8 +31,14 @@ namespace System.Net.Http
         /// </summary>
         public HttpRequestMessage InitialRequestMessage => _initialRequestMessage;
 
+        /// <summary>
+        /// The proxy uri.
+        /// </summary>
         public Uri? ProxyUri => _proxyUri;
 
+        /// <summary>
+        /// Whether needs to proxy the request.
+        /// </summary>
         public bool IsProxyConnect => _isProxyConnect;
     }
 }
