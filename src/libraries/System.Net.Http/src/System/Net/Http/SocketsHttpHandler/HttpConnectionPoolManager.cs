@@ -251,15 +251,21 @@ namespace System.Net.Http
             return hostHeader;
         }
 
-        private HttpConnectionKey GetConnectionKey(HttpRequestMessage request, Uri? proxyUri, bool isProxyConnect)
+        private async ValueTask<HttpConnectionKey> GetConnectionKeyAsync(HttpRequestMessage request, Uri? proxyUri, bool isProxyConnect, CancellationToken cancellationToken)
         {
             Uri? uri = request.RequestUri;
             Debug.Assert(uri != null);
+            string? customKey = null;
+
+            if (_settings._connectionKeyCallback != null)
+            {
+                customKey = await _settings._connectionKeyCallback(new SocketsHttpConnectionKeyContext(new DnsEndPoint(uri.IdnHost, uri.Port), request, proxyUri, isProxyConnect), cancellationToken).ConfigureAwait(false);
+            }
 
             if (isProxyConnect)
             {
                 Debug.Assert(uri == proxyUri);
-                return new HttpConnectionKey(HttpConnectionKind.ProxyConnect, uri.IdnHost, uri.Port, null, proxyUri, GetIdentityIfDefaultCredentialsUsed(_settings._defaultCredentialsUsedForProxy));
+                return new HttpConnectionKey(HttpConnectionKind.ProxyConnect, uri.IdnHost, uri.Port, null, proxyUri, GetIdentityIfDefaultCredentialsUsed(_settings._defaultCredentialsUsedForProxy), customKey);
             }
 
             string? sslHostName = null;
@@ -287,40 +293,40 @@ namespace System.Net.Http
                     if (HttpUtilities.IsNonSecureWebSocketScheme(uri.Scheme))
                     {
                         // Non-secure websocket connection through proxy to the destination.
-                        return new HttpConnectionKey(HttpConnectionKind.ProxyTunnel, uri.IdnHost, uri.Port, null, proxyUri, identity);
+                        return new HttpConnectionKey(HttpConnectionKind.ProxyTunnel, uri.IdnHost, uri.Port, null, proxyUri, identity, customKey);
                     }
                     else
                     {
                         // Standard HTTP proxy usage for non-secure requests
                         // The destination host and port are ignored here, since these connections
                         // will be shared across any requests that use the proxy.
-                        return new HttpConnectionKey(HttpConnectionKind.Proxy, null, 0, null, proxyUri, identity);
+                        return new HttpConnectionKey(HttpConnectionKind.Proxy, null, 0, null, proxyUri, identity, customKey);
                     }
                 }
                 else
                 {
                     // Tunnel SSL connection through proxy to the destination.
-                    return new HttpConnectionKey(HttpConnectionKind.SslProxyTunnel, uri.IdnHost, uri.Port, sslHostName, proxyUri, identity);
+                    return new HttpConnectionKey(HttpConnectionKind.SslProxyTunnel, uri.IdnHost, uri.Port, sslHostName, proxyUri, identity, customKey);
                 }
             }
             else if (sslHostName != null)
             {
-                return new HttpConnectionKey(HttpConnectionKind.Https, uri.IdnHost, uri.Port, sslHostName, null, identity);
+                return new HttpConnectionKey(HttpConnectionKind.Https, uri.IdnHost, uri.Port, sslHostName, null, identity, customKey);
             }
             else
             {
-                return new HttpConnectionKey(HttpConnectionKind.Http, uri.IdnHost, uri.Port, null, null, identity);
+                return new HttpConnectionKey(HttpConnectionKind.Http, uri.IdnHost, uri.Port, null, null, identity, customKey);
             }
         }
 
-        public ValueTask<HttpResponseMessage> SendAsyncCore(HttpRequestMessage request, Uri? proxyUri, bool async, bool doRequestAuth, bool isProxyConnect, CancellationToken cancellationToken)
+        public async ValueTask<HttpResponseMessage> SendAsyncCore(HttpRequestMessage request, Uri? proxyUri, bool async, bool doRequestAuth, bool isProxyConnect, CancellationToken cancellationToken)
         {
-            HttpConnectionKey key = GetConnectionKey(request, proxyUri, isProxyConnect);
+            HttpConnectionKey key = await GetConnectionKeyAsync(request, proxyUri, isProxyConnect, cancellationToken).ConfigureAwait(false);
 
             HttpConnectionPool? pool;
             while (!_pools.TryGetValue(key, out pool))
             {
-                pool = new HttpConnectionPool(this, key.Kind, key.Host, key.Port, key.SslHostName, key.ProxyUri, _maxConnectionsPerServer);
+                pool = new HttpConnectionPool(this, key.Kind, key.Host, key.Port, key.SslHostName, key.ProxyUri, _maxConnectionsPerServer, key.CustomKeyString == null);
 
                 if (_cleaningTimer == null)
                 {
@@ -349,7 +355,7 @@ namespace System.Net.Http
                 // that need to be closed.
             }
 
-            return pool.SendAsync(request, async, doRequestAuth, cancellationToken);
+            return await pool.SendAsync(request, async, doRequestAuth, cancellationToken).ConfigureAwait(false);
         }
 
         public ValueTask<HttpResponseMessage> SendProxyConnectAsync(HttpRequestMessage request, Uri proxyUri, bool async, CancellationToken cancellationToken)
@@ -519,9 +525,10 @@ namespace System.Net.Http
             public readonly int Port;
             public readonly string? SslHostName;     // null if not SSL
             public readonly Uri? ProxyUri;
-            public readonly string Identity;
+            public readonly string? Identity;
+            public readonly string? CustomKeyString; // This is set if a custom key generate callback has been registered
 
-            public HttpConnectionKey(HttpConnectionKind kind, string? host, int port, string? sslHostName, Uri? proxyUri, string identity)
+            public HttpConnectionKey(HttpConnectionKind kind, string? host, int port, string? sslHostName, Uri? proxyUri, string identity, string? customKeyString)
             {
                 Kind = kind;
                 Host = host;
@@ -529,25 +536,28 @@ namespace System.Net.Http
                 SslHostName = sslHostName;
                 ProxyUri = proxyUri;
                 Identity = identity;
+                CustomKeyString = customKeyString;
             }
 
             // In the common case, SslHostName (when present) is equal to Host.  If so, don't include in hash.
             public override int GetHashCode() =>
+                (CustomKeyString is not null ? HashCode.Combine(CustomKeyString) :
                 (SslHostName == Host ?
                     HashCode.Combine(Kind, Host, Port, ProxyUri, Identity) :
-                    HashCode.Combine(Kind, Host, Port, SslHostName, ProxyUri, Identity));
+                    HashCode.Combine(Kind, Host, Port, SslHostName, ProxyUri, Identity)));
 
             public override bool Equals(object? obj) =>
                 obj is HttpConnectionKey hck &&
                 Equals(hck);
 
             public bool Equals(HttpConnectionKey other) =>
-                Kind == other.Kind &&
+                CustomKeyString is not null ? CustomKeyString == other.CustomKeyString :
+                (Kind == other.Kind &&
                 Host == other.Host &&
                 Port == other.Port &&
                 ProxyUri == other.ProxyUri &&
                 SslHostName == other.SslHostName &&
-                Identity == other.Identity;
+                Identity == other.Identity);
         }
     }
 }

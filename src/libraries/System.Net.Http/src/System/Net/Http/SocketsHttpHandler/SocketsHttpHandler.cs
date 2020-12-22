@@ -391,6 +391,16 @@ namespace System.Net.Http
             }
         }
 
+        public Func<SocketsHttpConnectionKeyContext, CancellationToken, ValueTask<string>>? ConnectionKeyCallback
+        {
+            get => _settings._connectionKeyCallback;
+            set
+            {
+                CheckDisposedOrStarted();
+                _settings._connectionKeyCallback = value;
+            }
+        }
+
         public IDictionary<string, object?> Properties =>
             _settings._properties ?? (_settings._properties = new Dictionary<string, object?>());
 

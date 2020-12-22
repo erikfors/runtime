@@ -185,5 +185,11 @@ namespace System.Net.Http
             get => throw new PlatformNotSupportedException();
             set => throw new PlatformNotSupportedException();
         }
+
+        public Func<SocketsHttpConnectionKeyContext, CancellationToken, ValueTask<string>>? ConnectionKeyCallback
+        {
+            get => throw new PlatformNotSupportedException();
+            set => throw new PlatformNotSupportedException();
+        }
     }
 }
