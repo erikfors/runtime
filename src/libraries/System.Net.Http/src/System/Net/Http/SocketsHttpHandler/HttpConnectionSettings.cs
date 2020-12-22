@@ -58,6 +58,7 @@ namespace System.Net.Http
 
         internal Func<SocketsHttpConnectionContext, CancellationToken, ValueTask<Stream>>? _connectCallback;
         internal Func<SocketsHttpPlaintextStreamFilterContext, CancellationToken, ValueTask<Stream>>? _plaintextStreamFilter;
+        internal Func<SocketsHttpConnectionKeyContext, CancellationToken, ValueTask<string>>? _connectionKeyCallback;
 
         // !!! NOTE !!! This is temporary and will not ship.
         internal QuicImplementationProvider? _quicImplementationProvider;
@@ -121,6 +122,7 @@ namespace System.Net.Http
                 _activityHeadersPropagator = _activityHeadersPropagator,
                 _defaultCredentialsUsedForProxy = _proxy != null && (_proxy.Credentials == CredentialCache.DefaultCredentials || _defaultProxyCredentials == CredentialCache.DefaultCredentials),
                 _defaultCredentialsUsedForServer = _credentials == CredentialCache.DefaultCredentials,
+                _connectionKeyCallback = _connectionKeyCallback,
             };
 
             // TODO: Remove if/when QuicImplementationProvider is removed from System.Net.Quic.

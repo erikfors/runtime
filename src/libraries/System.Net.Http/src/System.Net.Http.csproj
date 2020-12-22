@@ -204,6 +204,7 @@
     <Compile Include="System\Net\Http\SocketsHttpHandler\RawConnectionStream.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\RedirectHandler.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\SocketsHttpConnectionContext.cs" />
+    <Compile Include="System\Net\Http\SocketsHttpHandler\SocketsHttpConnectionKeyContext.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\SocketsHttpHandler.cs" />
     <Compile Include="System\Net\Http\HttpTelemetry.AnyOS.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\SystemProxyInfo.cs" />
@@ -638,6 +639,7 @@
     <Compile Include="System\Net\Http\SocketsHttpHandler\HttpKeepAlivePingPolicy.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\HttpNoProxy.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\SocketsHttpConnectionContext.cs" />
+    <Compile Include="System\Net\Http\SocketsHttpHandler\SocketsHttpConnectionKeyContext.cs" />
     <Compile Include="System\Net\Http\BrowserHttpHandler\SystemProxyInfo.Browser.cs" />
     <Compile Include="System\Net\Http\BrowserHttpHandler\SocketsHttpHandler.cs" />
     <Compile Include="System\Net\Http\BrowserHttpHandler\BrowserHttpHandler.cs" />

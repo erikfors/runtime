@@ -403,6 +403,7 @@ namespace System.Net.Http
         public Func<SocketsHttpPlaintextStreamFilterContext, System.Threading.CancellationToken, System.Threading.Tasks.ValueTask<System.IO.Stream>>? PlaintextStreamFilter { get { throw null; } set { } }
         [System.CLSCompliantAttribute(false)]
         public System.Diagnostics.DistributedContextPropagator? ActivityHeadersPropagator { get { throw null; } set { } }
+        public Func<SocketsHttpConnectionKeyContext, System.Threading.CancellationToken, System.Threading.Tasks.ValueTask<string>>? ConnectionKeyCallback { get { throw null; } set { } }
     }
     public sealed class SocketsHttpConnectionContext
     {
@@ -416,6 +417,14 @@ namespace System.Net.Http
         public System.IO.Stream PlaintextStream { get { throw null; } }
         public Version NegotiatedHttpVersion { get { throw null; } }
         public HttpRequestMessage InitialRequestMessage { get { throw null; } }
+    }
+    public sealed class SocketsHttpConnectionKeyContext
+    {
+        internal SocketsHttpConnectionKeyContext() { }
+        public DnsEndPoint DnsEndPoint { get { throw null; } }
+        public HttpRequestMessage InitialRequestMessage { get { throw null; } }
+        public Uri? ProxyUri { get { throw null; } }
+        public bool IsProxyConnect { get { throw null; } }
     }
     public enum HttpKeepAlivePingPolicy
     {

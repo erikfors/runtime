@@ -119,7 +119,9 @@ namespace System.Net.Http
         /// <param name="port">The port with which this pool is associated.</param>
         /// <param name="sslHostName">The SSL host with which this pool is associated.</param>
         /// <param name="proxyUri">The proxy this pool targets (optional).</param>
-        public HttpConnectionPool(HttpConnectionPoolManager poolManager, HttpConnectionKind kind, string? host, int port, string? sslHostName, Uri? proxyUri)
+        /// <param name="maxConnections">The maximum number of connections allowed to be associated with the pool at any given time.</param>
+        /// <param name="preCacheHttp1Headers">Whether to pre-cache HTTP1.x headers.</param>
+        public HttpConnectionPool(HttpConnectionPoolManager poolManager, HttpConnectionKind kind, string? host, int port, string? sslHostName, Uri? proxyUri, int maxConnections, bool preCacheHttp1Headers = true)
         {
             _poolManager = poolManager;
             _kind = kind;
@@ -230,9 +232,12 @@ namespace System.Net.Http
                     $"{_originAuthority.IdnHost}:{_originAuthority.Port}" :
                     _originAuthority.IdnHost;
 
-                // Note the IDN hostname should always be ASCII, since it's already been IDNA encoded.
-                _hostHeaderValueBytes = Encoding.ASCII.GetBytes(hostHeader);
-                Debug.Assert(Encoding.ASCII.GetString(_hostHeaderValueBytes) == hostHeader);
+                if (preCacheHttp1Headers)
+                {
+                    // Note the IDN hostname should always be ASCII, since it's already been IDNA encoded.
+                    _hostHeaderValueBytes = Encoding.ASCII.GetBytes(hostHeader);
+                    Debug.Assert(Encoding.ASCII.GetString(_hostHeaderValueBytes) == hostHeader);
+                }
                 if (sslHostName == null)
                 {
                     _http2EncodedAuthorityHostHeader = HPackEncoder.EncodeLiteralHeaderFieldWithoutIndexingToAllocatedArray(H2StaticTable.Authority, hostHeader);
