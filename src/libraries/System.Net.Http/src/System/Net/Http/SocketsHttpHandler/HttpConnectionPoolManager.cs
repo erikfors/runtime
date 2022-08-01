@@ -39,6 +39,8 @@ namespace System.Net.Http
         private readonly Timer? _cleaningTimer;
         /// <summary>Heart beat timer currently used for Http2 ping only.</summary>
         private readonly Timer? _heartBeatTimer;
+        /// <summary>The maximum number of connections allowed per pool. <see cref="int.MaxValue"/> indicates unlimited.</summary>
+        private readonly int _maxConnectionsPerServer;
 
         private readonly HttpConnectionSettings _settings;
         private readonly IWebProxy? _proxy;
@@ -58,6 +60,7 @@ namespace System.Net.Http
         public HttpConnectionPoolManager(HttpConnectionSettings settings)
         {
             _settings = settings;
+            _maxConnectionsPerServer = settings._maxConnectionsPerServer;
             _pools = new ConcurrentDictionary<HttpConnectionKey, HttpConnectionPool>();
 
             // As an optimization, we can sometimes avoid the overheads associated with
@@ -294,11 +297,11 @@ namespace System.Net.Http
                     // Socks proxy
                     if (sslHostName != null)
                     {
-                        return new HttpConnectionKey(HttpConnectionKind.SslSocksTunnel, uri.IdnHost, uri.Port, sslHostName, proxyUri, identity);
+                        return new HttpConnectionKey(HttpConnectionKind.SslSocksTunnel, uri.IdnHost, uri.Port, sslHostName, proxyUri, identity, customKey);
                     }
                     else
                     {
-                        return new HttpConnectionKey(HttpConnectionKind.SocksTunnel, uri.IdnHost, uri.Port, null, proxyUri, identity);
+                        return new HttpConnectionKey(HttpConnectionKind.SocksTunnel, uri.IdnHost, uri.Port, null, proxyUri, identity, customKey);
                     }
                 }
                 else if (sslHostName == null)

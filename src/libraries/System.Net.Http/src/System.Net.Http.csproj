@@ -27,6 +27,7 @@
   <PropertyGroup Condition="'$(TargetsBrowser)' == 'true'">
     <DefineConstants>$(DefineConstants);TARGET_BROWSER</DefineConstants>
   </PropertyGroup>
+  
   <!-- ILLinker settings -->
   <PropertyGroup>
     <ILLinkDirectory>$(MSBuildThisFileDirectory)ILLink\</ILLinkDirectory>
